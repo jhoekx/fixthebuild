@@ -1,14 +1,11 @@
 (ns fixthebuild.handler
   (:require [integrant.core :as ig]
-            [compojure.core :refer :all]
+            [compojure.core :refer [routes]]
             [ring.adapter.jetty :refer [run-jetty]]))
-
-(defn- make-handler [endpoints]
-  (apply routes endpoints))
 
 (defmethod ig/init-key ::endpoint
   [_ {:keys [endpoints]}]
-  (make-handler endpoints))
+  (apply routes endpoints))
 
 (defmethod ig/init-key ::jetty
   [_ {:keys [port join? handler]}]
