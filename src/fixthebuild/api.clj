@@ -8,11 +8,11 @@
   api
   (context
     "/api" []
-    (GET "/hello" []
-         {:status 200
-          :body   ["Hello!\r\n"]})))
+    (GET "/person" []
+      {:status 200
+       :body   []})))
 
-(defn- make-handler []
+(defn make-handler []
   (-> api
       (wrap-json-response)
       (wrap-json-body)
