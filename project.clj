@@ -13,12 +13,7 @@
   :profiles {:dev {:dependencies [[org.clojure/data.json "0.2.6"]
                                   [integrant/repl "0.1.0"]
                                   [peridot "0.4.4"]]
-                   :plugins      [[com.jakemccrary/lein-test-refresh "0.18.1"]
-                                  [venantius/ultra "0.5.1"]]
                    :source-paths ["dev"]
-                   :main         user
-                   :ultra        {:repl        false
-                                  :stacktraces false
-                                  :tests       true}}}
+                   :main         user}}
   :main fixthebuild.main
   :aot [fixthebuild.main])
