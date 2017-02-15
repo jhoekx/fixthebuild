@@ -12,7 +12,8 @@
                  [compojure "1.5.2"]]
   :profiles {:dev {:dependencies [[org.clojure/data.json "0.2.6"]
                                   [integrant/repl "0.1.0"]
-                                  [peridot "0.4.4"]]
+                                  [peridot "0.4.4"]
+                                  [com.gearswithingears/shrubbery "0.4.1"]]
                    :source-paths ["dev"]
                    :main         user}}
   :main fixthebuild.main
