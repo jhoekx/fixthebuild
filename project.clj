@@ -15,14 +15,14 @@
                  [cljs-http "0.1.42"]]
   :plugins [[lein-cljsbuild "1.1.5"]
             [lein-figwheel "0.5.9"]]
-  :cljsbuild {:builds {:dev {:source-paths ["src/"]
+  :cljsbuild {:builds {:dev {:source-paths ["src-cljs/"]
                              :figwheel     true
                              :compiler     {:main       fixthebuild.core
                                             :asset-path "js"
                                             :output-to  "target/figwheel/public/js/fixthebuild.js"
                                             :output-dir "target/figwheel/public/js"
                                             :source-map true}}
-                       :min {:source-paths ["src/"]
+                       :min {:source-paths ["src-cljs/"]
                              :compiler     {:main          fixthebuild.core
                                             :output-to     "target/min/public/js/fixthebuild.js"
                                             :output-dir    "target/min/public/js"

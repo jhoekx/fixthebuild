@@ -6,14 +6,22 @@
 
 (defprotocol PersonRepository
   (list-persons [repository])
-  (add-person! [repository person]))
+  (add-person! [repository person])
+  (remove-person! [repository uuid]))
+
+(defn- uuid []
+  (str (java.util.UUID/randomUUID)))
 
 (defrecord InMemoryPersonRepository [storage]
   PersonRepository
   (list-persons [repository]
-    @storage)
+    (vals @storage))
   (add-person! [repository person]
-    (swap! storage conj person)))
+    (let [uuid (uuid)
+          new-person (assoc person :uuid uuid)]
+      (swap! storage assoc uuid new-person)))
+  (remove-person! [repository uuid]
+    (swap! storage dissoc uuid)))
 
 (defn- ok [response-body]
   {:status 200
@@ -27,8 +35,11 @@
         (ok
           (list-persons repository)))
       (POST "/person" {person :body}
-        (add-person! repository person)
-        (ok person)))))
+        (ok
+          (add-person! repository person)))
+      (DELETE "/person/:uuid" [uuid]
+        (remove-person! repository uuid)
+        {:status 201}))))
 
 (defn make-handler [repository]
   (-> (api repository)
@@ -40,4 +51,4 @@
   (make-handler repository))
 
 (defmethod ig/init-key ::memory [_ _]
-  (->InMemoryPersonRepository (atom [])))
+  (->InMemoryPersonRepository (atom {})))
