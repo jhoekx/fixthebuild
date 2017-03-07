@@ -68,12 +68,17 @@
         [:p
          [:input {:type "submit"}]]]])))
 
+(defn fixer-component []
+  [:p
+   [:a "I fixed it!"]])
+
 (defn persons-component []
   (get-persons)
   (fn []
     [:section
      [persons-list]
-     [persons-form]]))
+     [persons-form]
+     [fixer-component]]))
 
 (r/render-component [persons-component]
                     (.getElementById js/document "app"))

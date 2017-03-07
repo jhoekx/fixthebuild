@@ -11,8 +11,10 @@
    :fixthebuild.handler/endpoint {:endpoints [(ig/ref :fixthebuild.api/endpoint)
                                               (ig/ref :fixthebuild.app/endpoint)]}
    :fixthebuild.app/endpoint     {}
-   :fixthebuild.api/endpoint     {:repository (ig/ref :fixthebuild.api/memory)}
-   :fixthebuild.api/memory       {}})
+   :fixthebuild.api/endpoint     {:repository (ig/ref :fixthebuild.api/memory)
+                                  :fixer      (ig/ref :fixthebuild.api/fixer)}
+   :fixthebuild.api/memory       {}
+   :fixthebuild.api/fixer        {}})
 
 (defn system-config []
   config)
