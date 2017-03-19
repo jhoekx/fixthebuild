@@ -2,7 +2,6 @@
   (:use [peridot.core])
   (:require [clojure.data.json :as json]
             [clojure.test :refer :all]
-            [shrubbery.core :refer :all]
             [fixthebuild.api :refer :all]))
 
 (defn- read-json [response]
@@ -19,58 +18,28 @@
                   :name "Joe Smith"
                   :mail "joe@example.org"})
 
+(defn- make-repository [persons]
+  (let [repository (->InMemoryPersonRepository (atom {}))]
+    (doseq [person persons]
+      (add-person! repository person))
+    repository))
+
 (deftest person-test
-  (let [repository (mock PersonRepository
-                         {:list-persons   [next-person person]
-                          :add-person!    person
-                          :get-person     person
-                          :remove-person! {}
-                          :update-person! {}})
-        fixer      (mock Fixer)
-        handler    (make-handler repository fixer)]
-    (testing "Return a list of persons ordered by uuid"
-      (let [response (-> (session handler)
+  (testing "Returning a list of persons"
+    (let [repository (make-repository [next-person person])
+          fixer      (->InMemoryFixer (atom ""))
+          handler    (make-handler repository fixer)
+          response   (-> (session handler)
                          (request "/api/person")
                          :response)]
-        (is (= 200 (:status response)))
-        (is (= [person next-person] (read-json response)))))
+      (testing "gives status 200"
+        (is (= 200 (:status response))))
+      (testing "orders the persons by uuid"
+        (is (= [person next-person] (read-json response))))))
 
-    (testing "Add a person"
-      (let [response (-> (session handler)
-                         (request "/api/person"
-                                  :request-method :post
-                                  :content-type "application/json"
-                                  :body (json/write-str new-person))
-                         :response)]
-        (is (= 200 (:status response)))
-        (is (received? repository add-person!))
-        (is (received? repository add-person! [new-person]))
-        (is (= person (read-json response)))))
-
-    (testing "Remove a person"
-      (let [response (-> (session handler)
-                         (request "/api/person/abc"
-                                  :request-method :delete)
-                         :response)]
-        (is (= 201 (:status response)))
-        (is (received? repository remove-person!))
-        (is (received? repository remove-person! ["abc"]))))
-
-    (testing "Marking the build as fixed"
-      (let [response (-> (session handler)
-                         (request "/api/person/abc"
-                                  :request-method :post)
-                         :response)]
-        (is (= 201 (:status response)))))))
-
-(deftest fixer-test
-  (testing "The first person added becomes the fixer"
-    (let [repository (mock PersonRepository
-                           {:list-persons [person]
-                            :add-person!  person})
-          fixer      (mock Fixer
-                           {:set-fixer! nil
-                            :get-fixer  "abc"})
+  (testing "Adding a person"
+    (let [repository (make-repository [])
+          fixer      (->InMemoryFixer (atom ""))
           handler    (make-handler repository fixer)
           response   (-> (session handler)
                          (request "/api/person"
@@ -78,16 +47,60 @@
                                   :content-type "application/json"
                                   :body (json/write-str new-person))
                          :response)]
-      (is (received? fixer set-fixer!))
-      (is (received? fixer set-fixer! ["abc"]))))
+      (testing "gives status 200"
+        (is (= 200 (:status response))))
+      (testing "adds the person to the repository"
+        (let [[{:keys [name mail]}] (list-persons repository)]
+          (is (= (:name new-person) name))
+          (is (= (:mail new-person) mail))))
+      (testing "adds a UUID to the person in the repository"
+        (is (string? (:uuid (first (list-persons repository))))))
+      (testing "returns the person"
+        (is (= new-person (select-keys (read-json response) [:name :mail]))))
+      (testing "adds a UUID to the person"
+        (is (string? (:uuid (read-json response)))))))
 
-  (testing "The fixer is marked"
-    (let [repository (mock PersonRepository
-                           {:list-persons [person next-person]
-                            :add-person!  person})
-          fixer      (mock Fixer
-                           {:set-fixer! nil
-                            :get-fixer  "abc"})
+  (testing "Removing a person"
+    (let [repository (make-repository [person])
+          fixer      (->InMemoryFixer (atom ""))
+          handler    (make-handler repository fixer)
+          response   (-> (session handler)
+                         (request "/api/person/abc"
+                                  :request-method :delete)
+                         :response)]
+      (testing "gives status OK"
+        (is (= 201 (:status response))))
+      (testing "removes the person from the repository"
+        (is [] (list-persons repository)))))
+
+  (testing "Marking the build as fixed"
+    (let [repository (make-repository [person])
+          fixer      (->InMemoryFixer (atom ""))
+          handler    (make-handler repository fixer)
+          response   (-> (session handler)
+                         (request "/api/person/abc"
+                                  :request-method :post)
+                         :response)]
+      (testing "gives status OK"
+        (is (= 201 (:status response)))))))
+
+(deftest fixer-test
+  (testing "The first person added becomes the fixer"
+    (let [repository (make-repository [])
+          fixer      (->InMemoryFixer (atom ""))
+          handler    (make-handler repository fixer)
+          response   (-> (session handler)
+                         (request "/api/person"
+                                  :request-method :post
+                                  :content-type "application/json"
+                                  :body (json/write-str new-person))
+                         :response)]
+      (let [first-person (read-json response)]
+        (is (= (:uuid first-person) (get-fixer fixer))))))
+
+  (testing "The fixer is marked in the list"
+    (let [repository (make-repository [person next-person])
+          fixer      (->InMemoryFixer (atom "abc"))
           handler    (make-handler repository fixer)
           response   (-> (session handler)
                          (request "/api/person")
@@ -95,27 +108,21 @@
       (is (= [(assoc person :fixer true) next-person] (read-json response)))))
 
   (testing "A new fixer is a marked"
-    (let [repository (mock PersonRepository
-                           {:list-persons [person next-person]})
-          fixer      (mock Fixer
-                           {:set-fixer! nil
-                            :get-fixer  "abc"})
+    (let [repository (make-repository [person next-person])
+          fixer      (->InMemoryFixer (atom "abc"))
           handler    (make-handler repository fixer)
           response   (-> (session handler)
                          (request "/api/person/abc"
                                   :request-method :post)
                          :response)]
-      (is (received? fixer set-fixer! ["bcd"]))))
+      (is (= "bcd" (get-fixer fixer)))))
 
   (testing "The first fixer is rotated to again"
-    (let [repository (mock PersonRepository
-                           {:list-persons [person next-person]})
-          fixer      (mock Fixer
-                           {:set-fixer! nil
-                            :get-fixer  "bcd"})
+    (let [repository (make-repository [person next-person])
+          fixer      (->InMemoryFixer (atom "bcd"))
           handler    (make-handler repository fixer)
           response   (-> (session handler)
                          (request "/api/person/bcd"
                                   :request-method :post)
                          :response)]
-      (is (received? fixer set-fixer! ["abc"])))))
+      (is (= "abc" (get-fixer fixer))))))

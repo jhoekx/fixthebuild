@@ -32,8 +32,7 @@
                              :jar          true}}}
   :profiles {:dev     {:dependencies   [[org.clojure/data.json "0.2.6"]
                                         [integrant/repl "0.1.0"]
-                                        [peridot "0.4.4"]
-                                        [com.gearswithingears/shrubbery "0.4.1"]]
+                                        [peridot "0.4.4"]]
                        :source-paths   ["dev"]
                        :resource-paths ["target/figwheel"]
                        :main           user}

@@ -21,7 +21,7 @@
   (list-persons [repository]
     (vals @storage))
   (add-person! [repository person]
-    (let [uuid       (uuid)
+    (let [uuid       (or (:uuid person) (uuid))
           new-person (assoc person :uuid uuid)]
       (swap! storage assoc uuid new-person)
       new-person))
