@@ -41,6 +41,16 @@ user=> (reset)
 :resumed
 ```
 
+`lein test-refresh` provides a convenient development experience. Use a leiningen profile like:
+
+```
+{:user {:plugins [[com.jakemccrary/lein-test-refresh "0.19.0"]
+                  [venantius/ultra "0.5.1"]]
+        :ultra   {:repl        false
+                  :stacktraces false
+                  :tests       true}}}
+```
+
 ## License
 
 Copyright © 2017 Jeroen Hoekx
