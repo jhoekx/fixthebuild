@@ -25,6 +25,11 @@
     (<! (http/delete (str "api/person/" uuid)))
     (get-persons)))
 
+(defn- fix-build [{uuid :uuid}]
+  (go
+    (<! (http/post (str "api/person/" uuid)))
+    (get-persons)))
+
 (defn person-display [person]
   [:form {:on-submit (fn [e]
                        (remove-person person)
@@ -69,8 +74,13 @@
          [:input {:type "submit"}]]]])))
 
 (defn fixer-component []
-  [:p
-   [:a "I fixed it!"]])
+  (let [fixer (first (filter :fixer @persons))]
+    [:form {:on-submit (fn [e]
+                         (fix-build fixer)
+                         (.preventDefault e))}
+     [:p
+      [:input {:type  "submit"
+               :value (str (:name fixer) " fixed it!")}]]]))
 
 (defn persons-component []
   (get-persons)
