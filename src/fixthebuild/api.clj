@@ -39,6 +39,9 @@
   {:status 200
    :body   response-body})
 
+(defn- first-person? [repository]
+  (= 1 (count (list-persons repository))))
+
 (defn- order-persons [repository]
   (->> (list-persons repository)
        (sort-by :uuid)))
@@ -60,6 +63,15 @@
       next-uuid
       (first sorted-uuids))))
 
+(defn- fixer? [fixer uuid]
+  (= uuid (get-fixer fixer)))
+
+(defn- rotate-fixer-from [repository fixer uuid]
+  (->> (order-persons repository)
+       (map :uuid)
+       (choose-next uuid)
+       (set-fixer! fixer)))
+
 (defn api [repository fixer]
   (routes
     (context
@@ -70,18 +82,17 @@
                (mark-fixer fixer))))
       (POST "/person" {person :body}
         (let [new-person (add-person! repository person)]
-          (when (= 1 (count (list-persons repository)))
+          (when (first-person? repository)
             (set-fixer! fixer (:uuid new-person)))
           (ok
             new-person)))
       (DELETE "/person/:uuid" [uuid]
+        (when (fixer? fixer uuid)
+          (rotate-fixer-from repository fixer uuid))
         (remove-person! repository uuid)
         {:status 201})
       (POST "/person/:uuid" [uuid]
-        (->> (order-persons repository)
-             (map :uuid)
-             (choose-next uuid)
-             (set-fixer! fixer))
+        (rotate-fixer-from repository fixer uuid)
         {:status 201}))))
 
 (defn make-handler [repository fixer]

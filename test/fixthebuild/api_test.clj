@@ -125,4 +125,14 @@
                          (request "/api/person/bcd"
                                   :request-method :post)
                          :response)]
-      (is (= "abc" (get-fixer fixer))))))
+      (is (= "abc" (get-fixer fixer)))))
+
+  (testing "When removing a person, the next one becomes the fixer"
+    (let [repository (make-repository [person next-person])
+          fixer      (->InMemoryFixer (atom "abc"))
+          handler    (make-handler repository fixer)
+          response   (-> (session handler)
+                         (request "/api/person/abc"
+                                  :request-method :delete)
+                         :response)]
+      (is (= "bcd" (get-fixer fixer))))))
